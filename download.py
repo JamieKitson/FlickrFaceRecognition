@@ -3,12 +3,13 @@ import flickrapi
 import urllib.request
 import configparser
 import os
-
 #from imutils import paths
 import face_recognition
 #import argparse
 import pickle
 import cv2
+import asyncio
+import time
 
 
 PER_PAGE = 100
@@ -17,7 +18,33 @@ DIR = 'img'
 DETECTION_METHOD = 'ncc'
 
 
-def encodeFaces(fileName, photoId)
+async def downloadBestSize(photoId, origIsJpg, fileName, flickr):
+    # Get photo sizes
+    sizes = flickr.photos.getSizes(photo_id=photoId)
+    curMax = -1
+    url = ''
+    for size in sizes.find('sizes'):
+        #print(size)
+        try:
+            maxSide = max(int(size.get('width')), int(size.get('height')))
+        except:
+            continue
+        isOrig = size.get('label') == 'Original'
+        if maxSide > curMax and maxSide <= MAX_SIZE and (origIsJpg or not isOrig):
+            curMax = maxSide
+            url = size.get('source')
+
+    if url == '':
+        print('No URL found for ', photoId)
+        return False
+
+    #print(url, fileName)
+    urllib.request.urlretrieve(url, fileName)
+    return True
+
+
+async def encodeFaces(fileName, photoId):
+    print('a')
     image = cv2.imread(fileName)
     rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
@@ -37,88 +64,59 @@ def encodeFaces(fileName, photoId)
     f = open(os.path.join('pickles', photoId + '.pickle'), "wb")
     f.write(pickle.dumps(d))
     f.close()
+    print('b')
 
 
-flickr = auth.get_flickr()
+async def main():
 
-os.makedirs(DIR, exist_ok=True)
+    flickr = auth.get_flickr()
 
-configParser = configparser.RawConfigParser()
-configParser.read('config.ini')
+    os.makedirs(DIR, exist_ok=True)
 
-startimage = configParser['flickr'].getint('startimage', 0)
-ipage = startimage // PER_PAGE
-startimage = startimage % PER_PAGE
-pages = ipage
+    configParser = configparser.RawConfigParser()
+    configParser.read('config.ini')
 
-while ipage <= pages:
+    startimage = configParser['flickr'].getint('startimage', 0)
+    ipage = startimage // PER_PAGE
+    startimage = startimage % PER_PAGE
+    pages = ipage
 
-    res = flickr.photos.search(user_id='me', sort='date-posted-asc', per_page=PER_PAGE, page=(ipage + 1), extras='original_format')
+    while ipage <= int(pages):
 
-    xmlPhotos = res.find('photos')
-    pages = xmlPhotos.get('pages')
-    iphotos = xmlPhotos.get('total')
-    photos = xmlPhotos.findall('photo')
+        res = flickr.photos.search(user_id='me', sort='date-posted-asc', per_page=PER_PAGE, page=(ipage + 1), extras='original_format')
 
-    for iphoto in range(startimage, len(photos)):
+        xmlPhotos = res.find('photos')
+        pages = xmlPhotos.get('pages')
+        iphotos = xmlPhotos.get('total')
+        photos = xmlPhotos.findall('photo')
 
-        # Write image index back to ini file
-        totalstartimage = iphoto + ipage * PER_PAGE
-        configParser.set('flickr', 'startimage', totalstartimage)
-        with open('config.ini', 'w') as configfile:    # save
-            configParser.write(configfile)
-        print(totalstartimage, "/", iphotos)
-        #, '\r', end="", flush=True)
+        for iphoto in range(startimage, len(photos)):
 
-        # Get photo details
-        photo = photos[iphoto]
-        photoId = photo.get('id')
-        origIsJpg = photo.get('originalformat') == 'jpg'
+            # Write image index back to ini file
+            totalstartimage = iphoto + ipage * PER_PAGE
+            configParser.set('flickr', 'startimage', totalstartimage)
+            with open('config.ini', 'w') as configfile:    # save
+                configParser.write(configfile)
 
-        # Get photo sizes
-        sizes = flickr.photos.getSizes(photo_id=photoId)
-        curMax = -1
-        url = ''
-        for size in sizes.find('sizes'):
-            #print(size)
-            try:
-                maxSide = max(int(size.get('width')), int(size.get('height')))
-            except:
-                continue
-            isOrig = size.get('label') == 'Original'
-            if maxSide > curMax and maxSide <= MAX_SIZE and (origIsJpg or not isOrig):
-                curMax = maxSide
-                url = size.get('source')
+            # Get photo details
+            photo = photos[iphoto]
+            photoId = photo.get('id')
+            origIsJpg = photo.get('originalformat') == 'jpg'
 
-        if url == '':
-            print('No URL found for ', photoId)
-            continue
+            fileName = os.path.join(DIR, photoId + '.jpg')
 
-        fileName = os.path.join(DIR, photoId + '.jpg')
-        print(url, fileName)
-        urllib.request.urlretrieve(url, fileName)
+            t = time.time()
+            if await downloadBestSize(photoId, origIsJpg, fileName, flickr):
+                print('c')
+                asyncio.ensure_future(encodeFaces(fileName, photoId))
+                print('d')
 
-        image = cv2.imread(fileName)
-        rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            print(totalstartimage, "/", iphotos, time.time() - t, '\r', end="", flush=True)
 
-        # detect the (x, y)-coordinates of the bounding boxes
-        # corresponding to each face in the input image
-        boxes = face_recognition.face_locations(rgb, model=DETECTION_METHOD)
+        startimage = 0
+        ipage += 1
 
-        # compute the facial embedding for the face
-        encodings = face_recognition.face_encodings(rgb, boxes)
-
-        # build a dictionary of the image path, bounding box location,
-        # and facial encodings for the current image
-        d = [{"photoId": photoId, "loc": box, "encoding": enc}
-            for (box, enc) in zip(boxes, encodings)]
-        #data.extend(d)
-
-        f = open(os.path.join('pickles', photoId + '.pickle'), "wb")
-        f.write(pickle.dumps(d))
-        f.close()
-
-    startimage = 0
-    ipage += 1
-
+if __name__ == '__main__':
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(main())
 
