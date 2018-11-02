@@ -4,13 +4,44 @@ import urllib.request
 import configparser
 import os
 
+#from imutils import paths
+import face_recognition
+#import argparse
+import pickle
+import cv2
+
+
 PER_PAGE = 100
 MAX_SIZE = 1000
 DIR = 'img'
+DETECTION_METHOD = 'ncc'
 
-os.makedirs(DIR, exist_ok=True)
+
+def encodeFaces(fileName, photoId)
+    image = cv2.imread(fileName)
+    rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+    # detect the (x, y)-coordinates of the bounding boxes
+    # corresponding to each face in the input image
+    boxes = face_recognition.face_locations(rgb, model=DETECTION_METHOD)
+
+    # compute the facial embedding for the face
+    encodings = face_recognition.face_encodings(rgb, boxes)
+
+    # build a dictionary of the image path, bounding box location,
+    # and facial encodings for the current image
+    d = [{"photoId": photoId, "loc": box, "encoding": enc}
+        for (box, enc) in zip(boxes, encodings)]
+    #data.extend(d)
+
+    f = open(os.path.join('pickles', photoId + '.pickle'), "wb")
+    f.write(pickle.dumps(d))
+    f.close()
+
 
 flickr = auth.get_flickr()
+
+os.makedirs(DIR, exist_ok=True)
 
 configParser = configparser.RawConfigParser()
 configParser.read('config.ini')
@@ -42,28 +73,50 @@ while ipage <= pages:
         # Get photo details
         photo = photos[iphoto]
         photoId = photo.get('id')
-        orig = photo.get('originalformat')
+        origIsJpg = photo.get('originalformat') == 'jpg'
 
         # Get photo sizes
         sizes = flickr.photos.getSizes(photo_id=photoId)
         curMax = -1
-        form = 'jpg'
         url = ''
         for size in sizes.find('sizes'):
             #print(size)
-            maxSide = max(int(size.get('width')), int(size.get('height')))
-            if maxSide > curMax and maxSide <= MAX_SIZE and (orig == 'jpg' or size.get('label') != 'Original'):
+            try:
+                maxSide = max(int(size.get('width')), int(size.get('height')))
+            except:
+                continue
+            isOrig = size.get('label') == 'Original'
+            if maxSide > curMax and maxSide <= MAX_SIZE and (origIsJpg or not isOrig):
                 curMax = maxSide
                 url = size.get('source')
-                form = 'jpg' if size.get('label') != 'Original' else photo.get('originalformat')
 
-        if (url == '')
+        if url == '':
             print('No URL found for ', photoId)
             continue
 
-        fileName = os.path.join(DIR, '%s.%s' % (photoId, form))
+        fileName = os.path.join(DIR, photoId + '.jpg')
         print(url, fileName)
         urllib.request.urlretrieve(url, fileName)
+
+        image = cv2.imread(fileName)
+        rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+        # detect the (x, y)-coordinates of the bounding boxes
+        # corresponding to each face in the input image
+        boxes = face_recognition.face_locations(rgb, model=DETECTION_METHOD)
+
+        # compute the facial embedding for the face
+        encodings = face_recognition.face_encodings(rgb, boxes)
+
+        # build a dictionary of the image path, bounding box location,
+        # and facial encodings for the current image
+        d = [{"photoId": photoId, "loc": box, "encoding": enc}
+            for (box, enc) in zip(boxes, encodings)]
+        #data.extend(d)
+
+        f = open(os.path.join('pickles', photoId + '.pickle'), "wb")
+        f.write(pickle.dumps(d))
+        f.close()
 
     startimage = 0
     ipage += 1
