@@ -19,11 +19,11 @@ DIR = 'img'
 DETECTION_METHOD = 'ncc'
 
 
-def retry(func, args):
+def retry(func, **args):
     i = 0
     while True:
         try:
-            return func(*args)
+            return func(**args)
         except:
             i += 1
             if i > 3:
@@ -32,16 +32,7 @@ def retry(func, args):
 
 def downloadBestSize(photoId, origIsJpg, fileName, flickr):
     # Get photo sizes
-    i = 0
-    while True:
-        try:
-            sizes = flickr.photos.getSizes(photo_id=photoId)
-            break
-        except:
-            i += 1
-            if i > 3:
-                raise
-
+    sizes = retry(flickr.photos.getSizes, photo_id=photoId)
     curMax = -1
     url = ''
     for size in sizes.find('sizes'):
@@ -104,16 +95,7 @@ def main():
 
     while ipage <= int(pages):
 
-        i = 0
-
-        while True:
-            try:
-                res = flickr.photos.search(user_id='me', sort='date-posted-asc', per_page=PER_PAGE, page=(ipage + 1), extras='original_format')
-                break
-            except:
-                i += 1
-                if i > 3:
-                    raise
+        res = retry(flickr.photos.search, user_id='me', sort='date-posted-asc', per_page=PER_PAGE, page=(ipage + 1), extras='original_format')
 
         xmlPhotos = res.find('photos')
         pages = xmlPhotos.get('pages')
