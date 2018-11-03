@@ -19,9 +19,29 @@ DIR = 'img'
 DETECTION_METHOD = 'ncc'
 
 
+def retry(func, args):
+    i = 0
+    while True:
+        try:
+            return func(*args)
+        except:
+            i += 1
+            if i > 3:
+                raise
+
+
 def downloadBestSize(photoId, origIsJpg, fileName, flickr):
     # Get photo sizes
-    sizes = flickr.photos.getSizes(photo_id=photoId)
+    i = 0
+    while True:
+        try:
+            sizes = flickr.photos.getSizes(photo_id=photoId)
+            break
+        except:
+            i += 1
+            if i > 3:
+                raise
+
     curMax = -1
     url = ''
     for size in sizes.find('sizes'):
