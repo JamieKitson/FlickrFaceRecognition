@@ -11,14 +11,11 @@ import pickle
 import cv2
 import glob
 import os
+import sys
+import dlib
 
-# construct the argument parser and parse the arguments
-ap = argparse.ArgumentParser()
-ap.add_argument("-e", "--encodings", required=False,
-	help="path to serialized db of facial encodings")
-ap.add_argument("-j", "--jobs", type=int, default=-1,
-	help="# of parallel jobs to run (-1 will use all CPUs)")
-args = vars(ap.parse_args())
+start = int(sys.argv[1])
+end = int(sys.argv[2])
 
 # load the serialized face encodings + bounding box locations from
 # disk, then extract the set of encodings to so we can cluster on
@@ -37,16 +34,28 @@ for picklefile in files:
 #data = pickle.loads(open(args["encodings"], "rb").read())
 #data = np.array(data)
 print(len(data))
-encodings = [d["encoding"] for d in data]
+encodings = [dlib.vector(d["encoding"]) for d in data[start:end]]
 print(len(encodings))
+#print(type(encodings))
+#print(encodings[0])
 
 # cluster the embeddings
 print("[INFO] clustering...")
-clt = DBSCAN(metric="euclidean", n_jobs=args["jobs"])
-clt.fit(encodings)
+#clt = DBSCAN(metric="euclidean", n_jobs=-1)
+#clt.fit(encodings)
+
+labels = dlib.chinese_whispers_clustering(encodings, 0.5)
 
 # determine the total number of unique faces found in the dataset
-labelIDs = np.unique(clt.labels_)
+labelIDs = np.unique(labels)
+
+#withCounts = np.unique(labels, return_counts=True)
+
+#print(withCounts[1])
+#print(type(withCounts[1]))
+#labelIDs = withCounts[0].argsort(withCounts[1].astype(np.int64))
+#print(labelIDs)
+
 numUniqueFaces = len(np.where(labelIDs > -1)[0])
 print("[INFO] # unique faces: {}".format(numUniqueFaces))
 
@@ -56,7 +65,10 @@ for labelID in labelIDs:
 	# current label ID, then randomly sample a maximum of 25 indexes
 	# from the set
 	print("[INFO] faces for face ID: {}".format(labelID))
-	idxs = np.where(clt.labels_ == labelID)[0]
+	idxs = np.where(labels == labelID)[0]
+	c = len(idxs)
+	if c < 4:
+		continue
 	idxs = np.random.choice(idxs, size=min(81, len(idxs)),
 		replace=False)
 
@@ -80,9 +92,9 @@ for labelID in labelIDs:
 	montage = build_montages(faces, (96, 96), (9, 9))[0]
 	
 	# show the output montage
-	title = "Face ID #{}".format(labelID)
-	title = "Unknown Faces" if labelID == -1 else title
-	new_filename = Path('flickr').stem + title + ".jpg"
-	cv2.imwrite(new_filename, montage)
-	cv2.imshow(title, montage)
-	cv2.waitKey(0)
+	title = "Face #{}".format(labelID)
+#	title = "Unknown Faces" if labelID == -1 else title
+	new_filename = 'flickr_%d_%d_%04d_%s.jpg' % (start, end, c, title)
+	cv2.imwrite(os.path.join('res', new_filename), montage)
+	#cv2.imshow(title, montage)
+	#cv2.waitKey(0)
