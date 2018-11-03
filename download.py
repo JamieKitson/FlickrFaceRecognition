@@ -8,9 +8,10 @@ import face_recognition
 #import argparse
 import pickle
 import cv2
-import asyncio
+#import asyncio
 import time
-
+#from multiprocessing import Process
+from threading import Thread
 
 PER_PAGE = 100
 MAX_SIZE = 1000
@@ -18,7 +19,7 @@ DIR = 'img'
 DETECTION_METHOD = 'ncc'
 
 
-async def downloadBestSize(photoId, origIsJpg, fileName, flickr):
+def downloadBestSize(photoId, origIsJpg, fileName, flickr):
     # Get photo sizes
     sizes = flickr.photos.getSizes(photo_id=photoId)
     curMax = -1
@@ -43,8 +44,8 @@ async def downloadBestSize(photoId, origIsJpg, fileName, flickr):
     return True
 
 
-async def encodeFaces(fileName, photoId):
-    print('a')
+def encodeFaces(fileName, photoId):
+    t = time.time()
     image = cv2.imread(fileName)
     rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
@@ -64,10 +65,10 @@ async def encodeFaces(fileName, photoId):
     f = open(os.path.join('pickles', photoId + '.pickle'), "wb")
     f.write(pickle.dumps(d))
     f.close()
-    print('b')
+    #print('Encoding   ', time.time() -t)
 
 
-async def main():
+def main():
 
     flickr = auth.get_flickr()
 
@@ -83,7 +84,16 @@ async def main():
 
     while ipage <= int(pages):
 
-        res = flickr.photos.search(user_id='me', sort='date-posted-asc', per_page=PER_PAGE, page=(ipage + 1), extras='original_format')
+        i = 0
+
+        while True:
+            try:
+                res = flickr.photos.search(user_id='me', sort='date-posted-asc', per_page=PER_PAGE, page=(ipage + 1), extras='original_format')
+                break
+            except:
+                i += 1
+                if i > 3:
+                    raise
 
         xmlPhotos = res.find('photos')
         pages = xmlPhotos.get('pages')
@@ -106,10 +116,12 @@ async def main():
             fileName = os.path.join(DIR, photoId + '.jpg')
 
             t = time.time()
-            if await downloadBestSize(photoId, origIsJpg, fileName, flickr):
-                print('c')
-                asyncio.ensure_future(encodeFaces(fileName, photoId))
-                print('d')
+            if downloadBestSize(photoId, origIsJpg, fileName, flickr):
+                #print('Downloading', time.time() - t)
+                p = Thread(target=encodeFaces, args=(fileName, photoId))
+                p.start()
+            
+            #print('Downloaded ', time.time() - t)
 
             print(totalstartimage, "/", iphotos, time.time() - t, '\r', end="", flush=True)
 
@@ -117,6 +129,5 @@ async def main():
         ipage += 1
 
 if __name__ == '__main__':
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(main())
+    main()
 
