@@ -14,6 +14,8 @@ import os
 import sys
 import dlib
 
+THRESHOLD = 0.45
+
 start = int(sys.argv[1])
 end = int(sys.argv[2])
 
@@ -44,7 +46,7 @@ print("[INFO] clustering...")
 #clt = DBSCAN(metric="euclidean", n_jobs=-1)
 #clt.fit(encodings)
 
-labels = dlib.chinese_whispers_clustering(encodings, 0.5)
+labels = dlib.chinese_whispers_clustering(encodings, THRESHOLD)
 
 # determine the total number of unique faces found in the dataset
 labelIDs = np.unique(labels)
@@ -94,7 +96,7 @@ for labelID in labelIDs:
 	# show the output montage
 	title = "Face #{}".format(labelID)
 #	title = "Unknown Faces" if labelID == -1 else title
-	new_filename = 'flickr_%d_%d_%04d_%s.jpg' % (start, end, c, title)
+	new_filename = 'flickr_%.3f_%d_%d_%04d_%s.jpg' % (THRESHOLD, start, end, c, title)
 	cv2.imwrite(os.path.join('res', new_filename), montage)
 	#cv2.imshow(title, montage)
 	#cv2.waitKey(0)
