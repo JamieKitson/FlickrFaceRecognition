@@ -1,17 +1,16 @@
 import flickrapi
-#import webbrowser
-import configparser
+import ffrsettings
 
 def get_flickr():
-    configParser = configparser.RawConfigParser()   
-    configParser.read('config.ini')
 
-    api_key = configParser.get('flickr', 'key')
-    api_secret = configParser.get('flickr', 'secret')
+    settings = ffrsettings.ffrsettings()
+
+    api_key = settings.flickrkey
+    api_secret = settings.flickrsecret
 
     flickr = flickrapi.FlickrAPI(api_key, api_secret)
 
-# Only do this if we don't have a valid token already
+    # Only do this if we don't have a valid token already
     if not flickr.token_valid(perms='read'):
 
         print('To authenticate visit the following URL')
@@ -32,8 +31,6 @@ def get_flickr():
         # Trade the request token for an access token
         flickr.get_access_token(verifier)
 
-    # print('Step 2: use Flickr')
-#resp = flickr.photos.getInfo(photo_id='7658567128')
     return flickr
 
 if __name__ == "__main__":

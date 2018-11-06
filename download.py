@@ -1,22 +1,21 @@
 import auth
 import flickrapi
 import urllib.request
-import configparser
-import os
-#from imutils import paths
+import ffrsettings
+from os import path
 import face_recognition
-#import argparse
 import pickle
 import cv2
-#import asyncio
 import time
-#from multiprocessing import Process
 from threading import Thread
 
-PER_PAGE = 100
-MAX_SIZE = 1000
-DIR = 'img'
-DETECTION_METHOD = 'ncc'
+settings = ffrsettings.ffrsettings()
+
+PER_PAGE = settings.flickrsearchpagesize
+MAX_SIZE = settings.maximagesize
+DIR = settings.imgdir
+DETECTION_METHOD = settings.detectionmethod
+PICKLE_DIR = settings.encodingsdir
 
 
 def retry(func, **args):
@@ -77,7 +76,7 @@ def encodeFaces(fileName, photoId):
         for (box, enc) in zip(boxes, encodings)]
     #data.extend(d)
 
-    f = open(os.path.join('pickles', photoId + '.pickle'), "wb")
+    f = open(path.join(PICKLE_DIR, photoId + '.pickle'), "wb")
     f.write(pickle.dumps(d))
     f.close()
     #print('Encoded ', time.time() -t)
@@ -87,12 +86,7 @@ def main():
 
     flickr = auth.get_flickr()
 
-    os.makedirs(DIR, exist_ok=True)
-
-    configParser = configparser.RawConfigParser()
-    configParser.read('config.ini')
-
-    startimage = configParser['flickr'].getint('startimage', 0)
+    startimage = settings.startimage
     ipage = startimage // PER_PAGE
     startimage = startimage % PER_PAGE
     pages = ipage
@@ -111,16 +105,14 @@ def main():
 
             # Write image index back to ini file
             totalstartimage = iphoto + ipage * PER_PAGE
-            configParser.set('flickr', 'startimage', totalstartimage)
-            with open('config.ini', 'w') as configfile:    # save
-                configParser.write(configfile)
+            settings.startimage = totalstartimage
 
             # Get photo details
             photo = photos[iphoto]
             photoId = photo.get('id')
             origIsJpg = photo.get('originalformat') == 'jpg'
 
-            fileName = os.path.join(DIR, photoId + '.jpg')
+            fileName = path.join(DIR, photoId + '.jpg')
 
             t = time.time()
             if downloadBestSize(photoId, origIsJpg, fileName, flickr):

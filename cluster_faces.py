@@ -1,6 +1,3 @@
-# USAGE
-# python cluster_faces.py --encodings encodings.pickle
-
 # import the necessary packages
 from sklearn.cluster import DBSCAN
 from imutils import build_montages
@@ -14,8 +11,11 @@ import os
 import sys
 import dlib
 
-THRESHOLD = 0.4
-CLUSTER_IMAGE_DIR = 'res'
+settings = ffrsettings.ffrsettings()
+
+THRESHOLD = settings.threshold
+CLUSTER_IMAGE_DIR = settings.resultsdir
+PICKLES_DIR = settings.encodingsdir
 
 start = int(sys.argv[1])
 end = int(sys.argv[2])
@@ -28,7 +28,7 @@ print("[INFO] loading encodings...")
 
 data = []
 
-files = glob.glob('pickles/*.pickle')
+files = glob.glob(os.path.join(PICKLES_DIR, '*.pickle'))
 print(len(files))
 
 for picklefile in files:
