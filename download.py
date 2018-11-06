@@ -42,7 +42,8 @@ def downloadBestSize(photoId, origIsJpg, fileName, flickr):
             maxSide = max(int(size.get('width')), int(size.get('height')))
         except:
             continue
-        isOrig = size.get('label') == 'Original'
+        isOrig = size.get('label', 'not') == 'Original'
+        isPhoto = size.get('media', 'photo') == 'photo'
         if maxSide > curMax and maxSide <= MAX_SIZE and (origIsJpg or not isOrig):
             curMax = maxSide
             url = size.get('source')
@@ -94,7 +95,15 @@ def main():
 
     while ipage <= int(pages):
 
-        res = retry(flickr.photos.search, user_id='me', sort='date-posted-asc', per_page=PER_PAGE, page=(ipage + 1), extras='original_format')
+        res = retry(
+            flickr.photos.search, 
+            user_id='me', 
+            sort='date-posted-asc', 
+            per_page=PER_PAGE, 
+            page=(ipage + 1), 
+            extras='original_format',
+            text='IMG_20160618_091603'
+            )
 
         xmlPhotos = res.find('photos')
         pages = xmlPhotos.get('pages')
@@ -115,7 +124,10 @@ def main():
             fileName = path.join(DIR, photoId + '.jpg')
 
             t = time.time()
-            if downloadBestSize(photoId, origIsJpg, fileName, flickr):
+            if not os.isfile(fileName):
+                downloadBestSize(photoId, origIsJpg, fileName, flickr)
+
+            if os.isfile(fileName):
                 if (p != None):
                     p.join()
                 #print('Downloading', time.time() - t)
