@@ -29,7 +29,7 @@ def retry(func, **args):
                 raise
 
 
-def downloadBestSize(photoId, origIsJpg, fileName, flickr):
+def downloadBestSize(photoId, origIsJpg, imgFile, flickr):
     #print('downloading')
     #t = time.time()
     # Get photo sizes
@@ -52,16 +52,16 @@ def downloadBestSize(photoId, origIsJpg, fileName, flickr):
         print('No URL found for ', photoId)
         return False
 
-    #print(url, fileName)
-    urllib.request.urlretrieve(url, fileName)
+    #print(url, imgFile)
+    urllib.request.urlretrieve(url, imgFile)
     #print('Downloaded ', time.time() -t)
     return True
 
 
-def encodeFaces(fileName, photoId):
-    #print('encoding')
+def encodeFaces(imgFile, pickleFile, photoId):
+    #print('encoding', imgFile)
     #t = time.time()
-    image = cv2.imread(fileName)
+    image = cv2.imread(imgFile)
     rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
     # detect the (x, y)-coordinates of the bounding boxes
@@ -77,7 +77,7 @@ def encodeFaces(fileName, photoId):
         for (box, enc) in zip(boxes, encodings)]
     #data.extend(d)
 
-    f = open(path.join(PICKLE_DIR, photoId + '.pickle'), "wb")
+    f = open(pickleFile, "wb")
     f.write(pickle.dumps(d))
     f.close()
     #print('Encoded ', time.time() -t)
@@ -102,7 +102,6 @@ def main():
             per_page=PER_PAGE, 
             page=(ipage + 1), 
             extras='original_format',
-            text='IMG_20160618_091603'
             )
 
         xmlPhotos = res.find('photos')
@@ -121,18 +120,19 @@ def main():
             photoId = photo.get('id')
             origIsJpg = photo.get('originalformat') == 'jpg'
 
-            fileName = path.join(DIR, photoId + '.jpg')
+            imgFile = path.join(DIR, photoId + '.jpg')
+            pickleFile = path.join(PICKLE_DIR, photoId + '.pickle')
 
             t = time.time()
-            if not os.isfile(fileName):
-                downloadBestSize(photoId, origIsJpg, fileName, flickr)
+            if not path.isfile(imgFile):
+                downloadBestSize(photoId, origIsJpg, imgFile, flickr)
 
-            if os.isfile(fileName):
+            if path.isfile(imgFile) and not path.isfile(pickleFile):
                 if (p != None):
                     p.join()
                 #print('Downloading', time.time() - t)
                 #print('starting')
-                p = Thread(target=encodeFaces, args=(fileName, photoId))
+                p = Thread(target=encodeFaces, args=(imgFile, pickleFile, photoId))
                 p.start()
                 #print('started')
             
