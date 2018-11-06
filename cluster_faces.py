@@ -1,13 +1,12 @@
 # import the necessary packages
-#from sklearn.cluster import DBSCAN
 from imutils import build_montages
-from pathlib import Path
+#from pathlib import Path
 import numpy as np
-import argparse
+#import argparse
 import pickle
 import cv2
 import glob
-import os
+from os import path
 import sys
 import dlib
 import ffrsettings
@@ -17,6 +16,7 @@ settings = ffrsettings.ffrsettings()
 THRESHOLD = settings.threshold
 CLUSTER_IMAGE_DIR = settings.resultsdir
 PICKLES_DIR = settings.encodingsdir
+IMG_DIR = settings.imgdir
 
 start = int(sys.argv[1])
 end = int(sys.argv[2])
@@ -29,7 +29,7 @@ print("[INFO] loading encodings...")
 
 data = []
 
-files = glob.glob(os.path.join(PICKLES_DIR, '*.pickle'))
+files = glob.glob(path.join(PICKLES_DIR, '*.pickle'))
 print(len(files))
 
 for picklefile in files:
@@ -74,17 +74,17 @@ for labelID in labelIDs:
 	c = len(idxs)
 	if c < 4:
 		continue
-	idxs = np.random.choice(idxs, size=min(81, len(idxs)),
+	todsp = np.random.choice(idxs, size=min(81, len(idxs)),
 		replace=False)
 
 	# initialize the list of faces to include in the montage
 	faces = []
 
 	# loop over the sampled indexes
-	for i in idxs:
+	for i in todsp:
 		#print(data[i])
 		# load the input image and extract the face ROI
-		image = cv2.imread(os.path.join('img', data[i]["photoId"] + '.jpg'))
+		image = cv2.imread(path.join(IMG_DIR, data[i]["photoId"] + '.jpg'))
 		(top, right, bottom, left) = data[i]["loc"]
 		face = image[top:bottom, left:right]
 
@@ -100,6 +100,15 @@ for labelID in labelIDs:
 	title = "Face #{}".format(labelID)
 #	title = "Unknown Faces" if labelID == -1 else title
 	new_filename = 'flickr_%.3f_%d_%d_%04d_%s.jpg' % (THRESHOLD, start, end, c, title)
-	cv2.imwrite(os.path.join(CLUSTER_IMAGE_DIR, new_filename), montage)
-	#cv2.imshow(title, montage)
-	#cv2.waitKey(0)
+	cv2.imwrite(path.join(CLUSTER_IMAGE_DIR, new_filename), montage)
+	print("Once you have examined the image press any key. If you are happy then enter the tag. If you are unhappy don't.")
+	cv2.imshow(title, montage)
+	cv2.waitKey(0)
+	tag = str(input('Tag:'))
+	if tag != '':
+		with open("test.txt", "a") as myfile:
+			myfile.write("tag:%s\n" % tag)
+			for i in idxs:
+				myfile.write(data[i]["photoId"] + "\n")
+
+	cv2.destroyAllWindows()
