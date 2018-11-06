@@ -10,6 +10,7 @@ from os import path
 import sys
 import dlib
 import ffrsettings
+import collections
 
 settings = ffrsettings.ffrsettings()
 
@@ -50,9 +51,11 @@ print("[INFO] clustering...")
 #clt.fit(encodings)
 
 labels = dlib.chinese_whispers_clustering(encodings, THRESHOLD)
+counts = collections.Counter(labels)
 
 # determine the total number of unique faces found in the dataset
 labelIDs = np.unique(labels)
+labelIDs = sorted(labelIDs, key=lambda x: -counts[x])
 
 #withCounts = np.unique(labels, return_counts=True)
 
@@ -61,7 +64,7 @@ labelIDs = np.unique(labels)
 #labelIDs = withCounts[0].argsort(withCounts[1].astype(np.int64))
 #print(labelIDs)
 
-numUniqueFaces = len(np.where(labelIDs > -1)[0])
+numUniqueFaces = len(labelIDs)
 print("[INFO] # unique faces: {}".format(numUniqueFaces))
 
 # loop over the unique face integers
