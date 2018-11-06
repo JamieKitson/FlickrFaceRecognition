@@ -5,11 +5,11 @@ pagesize = 100
 maximagesize = 1000
 
 [paths]
-imgs = 'img'
-results = 'res'
-encodings = 'pickles'
+imgs = imgs
+results = results
+encodings = encodings
 
 [recognition]
-detectionmethod = 'ncc'
+detectionmethod = ncc
 threshold = 0.4
 
