@@ -27,11 +27,11 @@ class ffrsettings:
         return self.configParser.get('flickr', 'secret')
 
     @property
-    def flickrsearchpagesize
+    def flickrsearchpagesize(self):
         return self.configParser['flickr'].getint('pagesize', 100)
 
     @property
-    def maximagesize
+    def maximagesize(self):
         return self.configParser['flickr'].getint('maximagesize', 1000)
 
     def getpath(self, path):
@@ -52,11 +52,11 @@ class ffrsettings:
         return self.getpath('results')
 
     @property
-    def detectionmethod
+    def detectionmethod(self):
         return self.configParser['recognition'].get('detectionmethod', 'ncc')
 
     @property
-    def threshold
+    def threshold(self):
         return self.configParser['recognition'].getfloat('threshold', 0.4)
 
 
