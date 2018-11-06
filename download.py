@@ -119,6 +119,8 @@ def main():
 
             t = time.time()
             if downloadBestSize(photoId, origIsJpg, fileName, flickr):
+                if (p != None):
+                    p.join()
                 #print('Downloading', time.time() - t)
                 p = Thread(target=encodeFaces, args=(fileName, photoId))
                 p.start()

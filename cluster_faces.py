@@ -14,10 +14,12 @@ import os
 import sys
 import dlib
 
-THRESHOLD = 0.45
+THRESHOLD = 0.4
+CLUSTER_IMAGE_DIR = 'res'
 
 start = int(sys.argv[1])
 end = int(sys.argv[2])
+
 
 # load the serialized face encodings + bounding box locations from
 # disk, then extract the set of encodings to so we can cluster on
@@ -97,6 +99,6 @@ for labelID in labelIDs:
 	title = "Face #{}".format(labelID)
 #	title = "Unknown Faces" if labelID == -1 else title
 	new_filename = 'flickr_%.3f_%d_%d_%04d_%s.jpg' % (THRESHOLD, start, end, c, title)
-	cv2.imwrite(os.path.join('res', new_filename), montage)
+	cv2.imwrite(os.path.join(CLUSTER_IMAGE_DIR, new_filename), montage)
 	#cv2.imshow(title, montage)
 	#cv2.waitKey(0)
