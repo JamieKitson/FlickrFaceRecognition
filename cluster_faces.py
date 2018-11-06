@@ -1,5 +1,5 @@
 # import the necessary packages
-from sklearn.cluster import DBSCAN
+#from sklearn.cluster import DBSCAN
 from imutils import build_montages
 from pathlib import Path
 import numpy as np
@@ -10,6 +10,7 @@ import glob
 import os
 import sys
 import dlib
+import ffrsettings
 
 settings = ffrsettings.ffrsettings()
 

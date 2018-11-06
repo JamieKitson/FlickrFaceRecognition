@@ -13,7 +13,7 @@ settings = ffrsettings.ffrsettings()
 
 PER_PAGE = settings.flickrsearchpagesize
 MAX_SIZE = settings.maximagesize
-DIR = settings.imgdir
+IMG_DIR = settings.imgdir
 DETECTION_METHOD = settings.detectionmethod
 PICKLE_DIR = settings.encodingsdir
 
@@ -120,7 +120,7 @@ def main():
             photoId = photo.get('id')
             origIsJpg = photo.get('originalformat') == 'jpg'
 
-            imgFile = path.join(DIR, photoId + '.jpg')
+            imgFile = path.join(IMG_DIR, photoId + '.jpg')
             pickleFile = path.join(PICKLE_DIR, photoId + '.pickle')
 
             t = time.time()
