@@ -31,6 +31,8 @@ def retry(func, **args):
 
 
 def downloadBestSize(photoId, origIsJpg, fileName, flickr):
+    #print('downloading')
+    #t = time.time()
     # Get photo sizes
     sizes = retry(flickr.photos.getSizes, photo_id=photoId)
     curMax = -1
@@ -52,11 +54,13 @@ def downloadBestSize(photoId, origIsJpg, fileName, flickr):
 
     #print(url, fileName)
     urllib.request.urlretrieve(url, fileName)
+    #print('Downloaded ', time.time() -t)
     return True
 
 
 def encodeFaces(fileName, photoId):
-    t = time.time()
+    #print('encoding')
+    #t = time.time()
     image = cv2.imread(fileName)
     rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
@@ -76,7 +80,7 @@ def encodeFaces(fileName, photoId):
     f = open(os.path.join('pickles', photoId + '.pickle'), "wb")
     f.write(pickle.dumps(d))
     f.close()
-    #print('Encoding   ', time.time() -t)
+    #print('Encoded ', time.time() -t)
 
 
 def main():
@@ -92,6 +96,7 @@ def main():
     ipage = startimage // PER_PAGE
     startimage = startimage % PER_PAGE
     pages = ipage
+    p = None
 
     while ipage <= int(pages):
 
@@ -122,8 +127,10 @@ def main():
                 if (p != None):
                     p.join()
                 #print('Downloading', time.time() - t)
+                #print('starting')
                 p = Thread(target=encodeFaces, args=(fileName, photoId))
                 p.start()
+                #print('started')
             
             #print('Downloaded ', time.time() - t)
 
