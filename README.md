@@ -25,7 +25,9 @@ The `cluster_faces.py` script will try to group similar faces together and promp
 
 **THRESHOLD** decides how similar faces have to be to be clustered and should be between 0 and 1. A lower number is stricter and leads to fewer false positives, but more and smaller groups, eg, a person might be put into different groups depending on whether they're wearing glasses or not. 
 
-As far as I know dlib is not racist or sexist, but seems (from experience) to have been trained with [mostly][1] [white][2] men, ie, it is more accurate with white men than non-white women. In practice this means that if there are non-white/women in your dataset then you will need to set the threshold lower. I find 0.45 - 0.5 ok for white men but even as low as 0.4 dlib will confuse certain female Chinese/Malay friends of mine.
+As far as I know dlib is not racist or sexist, but seems (from experience) to have been trained with [mostly][1] [white][2] men, ie, it is more accurate with white men than non-white women. In practice this means that if there are non-white/women in your dataset then you will need to set the threshold lower for more accurate results. I find 0.45 - 0.5 ok for white men but even as low as 0.4 dlib will confuse certain female Chinese/Malay friends of mine.
+
+Having said all that, I find it better to run clustering several times, starting with a high figure of 0.5 - 0.6 and only name clusters that are sufficiently accurate. Each time you run the clustering lower the threshold by about 0.05 and name faces that you haven't named each time.
 
 [1]: https://github.com/ageitgey/face_recognition/wiki/Face-Recognition-Accuracy-Problems#question-face-recognition-works-well-with-european-individuals-but-overall-accuracy-is-lower-with-asian-individuals
 [2]: https://github.com/davisking/dlib/issues/1407
