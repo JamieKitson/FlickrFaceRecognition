@@ -77,9 +77,9 @@ def encodeFaces(imgFile, pickleFile, photoId):
         for (box, enc) in zip(boxes, encodings)]
     #data.extend(d)
 
-    f = open(pickleFile, "wb")
-    f.write(pickle.dumps(d))
-    f.close()
+    with open(pickleFile, "wb") as f:
+        f.write(pickle.dumps(d))
+
     #print('Encoded ', time.time() -t)
 
 
